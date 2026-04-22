@@ -74,7 +74,7 @@ with st.sidebar:
             st.rerun()
 
 # 4. MÀN HÌNH CHÍNH
-st.markdown('<div class="main-title">♻️ ECO-SORT VINSCHOOL ♻️</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">♻️ PHÂN LOẠI CÁC LOẠI RÁC KHÁC NHAU CÙNG ECOSORT ♻️</div>', unsafe_allow_html=True)
 
 # HIỂN THỊ HƯỚNG DẪN LUÂN PHIÊN
 if st.session_state['show_ins']:

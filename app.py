@@ -2,11 +2,12 @@ import streamlit as st
 import pandas as pd
 import base64
 import os
+import random
 
 # 1. CẤU HÌNH TRANG & GIAO DIỆN (MÀU XANH ECO)
 st.set_page_config(page_title="ECOSORT", page_icon="♻️", layout="wide")
 
-# Màu xanh Eco: #4CAF50
+# CSS Custom để giao diện nhìn xịn hơn bản mặc định
 st.markdown("""
     <style>
     .main-title { text-align: center; font-size: 32px; font-weight: bold; margin-bottom: 25px; color: #4CAF50; }
@@ -33,7 +34,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. HÀM HỖ TRỢ ĐỌC ẢNH
+# 2. HÀM HỖ TRỢ ĐỌC ẢNH & DỮ LIỆU
 def get_base64_img(file_path):
     if os.path.exists(file_path):
         with open(file_path, "rb") as f: return base64.b64encode(f.read()).decode()
@@ -46,11 +47,11 @@ def load_data():
 
 df = load_data()
 
-# KHỞI TẠO BỘ NHỚ TẠM
+# KHỞI TẠO BỘ NHỚ TẠM (Session State)
 if 'show_ins' not in st.session_state: st.session_state['show_ins'] = True
 if 'ket_qua_cu' not in st.session_state: st.session_state['ket_qua_cu'] = None
 
-# 3. THANH BÊN (SIDEBAR) - LOGO VINSCHOOL
+# 3. THANH BÊN (SIDEBAR)
 with st.sidebar:
     if os.path.exists("vinschool_logo.png"):
         st.image("vinschool_logo.png", use_container_width=True)
@@ -60,6 +61,7 @@ with st.sidebar:
     st.write("---")
     nguong_am = st.slider("Ngưỡng ẩm rác hữu cơ (%)", 0, 100, 50)
     
+    # Chỉ hiện nút khi hướng dẫn đã bị tắt
     if not st.session_state['show_ins']:
         st.write("---")
         if st.button("🔄 Hiện lại hướng dẫn"):
@@ -69,7 +71,7 @@ with st.sidebar:
 # 4. MÀN HÌNH CHÍNH
 st.markdown('<div class="main-title">♻️ PHÂN LOẠI CÁC LOẠI RÁC KHÁC NHAU ♻️</div>', unsafe_allow_html=True)
 
-# Hiển thị Hướng dẫn
+# Hiển thị Hướng dẫn (Có dấu X tắt)
 if st.session_state['show_ins']:
     c1, c2 = st.columns([0.94, 0.06])
     with c1:
@@ -98,7 +100,7 @@ with col_in:
         do_am = st.slider("Độ ẩm (%)", 0, 100, 25)
     
     la_nguy_hai = st.toggle("💉 Rác y tế / Nguy hại?")
-    nut_phan_tich = st.button("🔎 BẮT ĐẦU PHÂN TÍCH🔍")
+    nut_phan_tich = st.button("🔎 BẮT ĐẦU PHÂN TÍCH 🔍")
 
 # 6. LOGIC AI
 if nut_phan_tich:
@@ -112,14 +114,14 @@ if nut_phan_tich:
 
 hien_thi = st.session_state['ket_qua_cu']
 
-# 7. HIỂN THỊ KẾT QUẢ
+# 7. HIỂN THỊ KẾT QUẢ (4 THÙNG RÁC)
 st.write("---")
 t1, t2, t3, t4 = st.columns(4)
 
 anh_b64 = {
     "huuco": get_base64_img("huuco.png"),
     "taiche": get_base64_img("taiche.png"),
-    "nguyhai": get_base64_img("voco.png"),
+    "nguyhai": get_base64_img("voco.png"), # File voco.png dùng làm icon nguy hại
     "voco": get_base64_img("general.png")
 }
 
@@ -140,3 +142,16 @@ for cot, ma, nhan, lop_css in thung_rac:
                 <div class="bin-label">{nhan}</div>
             </div>
         """, unsafe_allow_html=True)
+
+# 8. PHẦN KIẾN THỨC BỔ SUNG (WOW FACTOR)
+# Đặt ngoài vòng lặp for để không bị lặp lại 4 lần
+st.write("---")
+with st.expander("🌍 Bạn có biết? (Kiến thức môi trường từ AI)"):
+    facts = [
+        "♻️ Một chai nhựa có thể mất đến 450 năm để phân hủy hoàn toàn.",
+        "🥗 Rác hữu cơ khi được ủ đúng cách sẽ tạo ra phân bón giàu dinh dưỡng cho cây trồng.",
+        "🔋 Pin và rác điện tử chứa kim loại nặng, tuyệt đối không vứt vào thùng rác thông thường!",
+        "🥤 Tại Việt Nam, mỗi hộ gia đình thải ra khoảng 1kg rác mỗi ngày.",
+        "🌊 Đến năm 2050, lượng nhựa trong đại dương có thể nhiều hơn lượng cá nếu chúng ta không hành động."
+    ]
+    st.info(random.choice(facts))

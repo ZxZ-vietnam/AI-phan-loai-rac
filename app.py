@@ -3,38 +3,53 @@ import pandas as pd
 import base64
 import os
 import random
+import time
 
-# 1. CẤU HÌNH TRANG & GIAO DIỆN (MÀU XANH ECO)
-st.set_page_config(page_title="ECOSORT", page_icon="♻️", layout="wide")
+# 1. CẤU HÌNH TRANG
+st.set_page_config(page_title="ECOSORT PRO", page_icon="♻️", layout="wide")
 
-# CSS Custom để giao diện nhìn xịn hơn bản mặc định
+# 2. CSS NÂNG CAO - TRỰC DIỆN & DỨT KHOÁT
 st.markdown("""
     <style>
-    .main-title { text-align: center; font-size: 32px; font-weight: bold; margin-bottom: 25px; color: #4CAF50; }
+    .main-title { text-align: center; font-size: 32px; font-weight: bold; color: #4CAF50; }
+    
+    /* Hiệu ứng Zoom Instant (Phóng to dứt khoát) */
     .bin-box { 
         text-align: center; padding: 20px; border-radius: 15px; 
         border: 1px solid #333; background-color: #161b22; 
         min-height: 250px; display: flex; flex-direction: column; align-items: center; justify-content: center;
-        transition: all 0.3s ease;
     }
-    .active-huuco { background-color: #1b4332; border: 2px solid #4CAF50; box-shadow: 0px 0px 15px #4CAF50; }
-    .active-taiche { background-color: #4d4610; border: 2px solid #fbc02d; box-shadow: 0px 0px 15px #fbc02d; }
-    .active-hazar { background-color: #4d1010; border: 2px solid #f44336; box-shadow: 0px 0px 15px #f44336; }
-    .active-general { background-color: #102a4d; border: 2px solid #2196F3; box-shadow: 0px 0px 15px #2196F3; }
     
-    .inactive { opacity: 0.1; filter: grayscale(100%); }
+    /* Thùng rác được chọn sẽ to ra ngay lập tức */
+    .active-bin { 
+        transform: scale(1.1); 
+        border: 4px solid #4CAF50 !important; 
+        box-shadow: 0px 0px 20px #4CAF50;
+        z-index: 99;
+    }
+    
+    .inactive { opacity: 0.2; filter: grayscale(100%); }
     .bin-img { max-width: 120px; max-height: 120px; object-fit: contain; }
-    .bin-label { font-weight: bold; color: white; font-size: 17px; margin-top: 15px; }
-    
-    /* Khung hướng dẫn viền xanh */
-    .ins-card {
-        background-color: #262730; padding: 15px; border-left: 5px solid #4CAF50;
-        border-radius: 5px; margin-bottom: 20px;
+
+    /* Hiệu ứng Vứt rác Directly vào thùng */
+    @keyframes tossIntoBin {
+        0% { transform: translateY(-150px) scale(1.5); opacity: 1; }
+        100% { transform: translateY(50px) scale(0); opacity: 0; }
     }
+    .toss-animation {
+        position: absolute; left: 0; right: 0; margin-left: auto; margin-right: auto;
+        width: fit-content; z-index: 100;
+        font-size: 30px; font-weight: bold; color: white;
+        background: #4CAF50; padding: 10px 20px; border-radius: 50px;
+        animation: tossIntoBin 0.6s ease-in forwards; /* Nhanh & dứt khoát */
+    }
+    
+    /* Bọc hàng thùng rác để làm điểm tựa cho animation */
+    .bin-container { position: relative; padding-top: 100px; }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. HÀM HỖ TRỢ ĐỌC ẢNH & DỮ LIỆU
+# 3. HÀM TRỢ GIÚP
 def get_base64_img(file_path):
     if os.path.exists(file_path):
         with open(file_path, "rb") as f: return base64.b64encode(f.read()).decode()
@@ -47,111 +62,81 @@ def load_data():
 
 df = load_data()
 
-# KHỞI TẠO BỘ NHỚ TẠM (Session State)
-if 'show_ins' not in st.session_state: st.session_state['show_ins'] = True
+if 'selected_index' not in st.session_state: st.session_state.selected_index = 0
+if 'show_anim' not in st.session_state: st.session_state.show_anim = False
 if 'ket_qua_cu' not in st.session_state: st.session_state['ket_qua_cu'] = None
 
-# 3. THANH BÊN (SIDEBAR)
+# 4. THANH BÊN
 with st.sidebar:
     if os.path.exists("vinschool_logo.png"):
         st.image("vinschool_logo.png", use_container_width=True)
-    
-    st.header("Tùy chỉnh rác")
-    che_do = st.radio("Phương thức nhập dữ liệu:", ["Dữ liệu có sẵn (DB)", "Tự nhập thông số"])
-    st.write("---")
-    nguong_am = st.slider("Ngưỡng ẩm rác hữu cơ (%)", 0, 100, 50)
-    
-    # Chỉ hiện nút khi hướng dẫn đã bị tắt
-    if not st.session_state['show_ins']:
-        st.write("---")
-        if st.button("🔄 Hiện lại hướng dẫn"):
-            st.session_state['show_ins'] = True
-            st.rerun()
+    nguong_am = st.slider("Ngưỡng ẩm hữu cơ (%)", 0, 100, 50)
 
-# 4. MÀN HÌNH CHÍNH
-st.markdown('<div class="main-title">♻️ PHÂN LOẠI CÁC LOẠI RÁC KHÁC NHAU ♻️</div>', unsafe_allow_html=True)
+# 5. MÀN HÌNH CHÍNH
+st.markdown('<div class="main-title">♻️ ECO-SORT VINSCHOOL ♻️</div>', unsafe_allow_html=True)
 
-# Hiển thị Hướng dẫn (Có dấu X tắt)
-if st.session_state['show_ins']:
-    c1, c2 = st.columns([0.94, 0.06])
-    with c1:
-        st.markdown("""
-        <div class="ins-card">
-            <b>📖 HƯỚNG DẪN SỬ DỤNG:</b><br>
-            1. Chọn mẫu vật tại Sidebar bên trái. | 2. Điều chỉnh ngưỡng ẩm AI phù hợp. | 3. Nhấn <b>Bắt đầu phân tích</b>.
-        </div>
-        """, unsafe_allow_html=True)
+# 6. NHẬP LIỆU & SHUFFLE
+c1, c2 = st.columns([0.85, 0.15])
+if df is not None:
     with c2:
-        if st.button("❌", key="close_btn"):
-            st.session_state['show_ins'] = False
+        st.write(" ")
+        if st.button("🔀"):
+            st.session_state.selected_index = random.randint(0, len(df['Tên rác'].unique()) - 1)
             st.rerun()
+    with c1:
+        ten_rac = st.selectbox("Mẫu rác:", df['Tên rác'].unique(), index=st.session_state.selected_index)
 
-# 5. NHẬP LIỆU
-col_in, _ = st.columns([1, 1])
-with col_in:
-    if che_do == "Dữ liệu có sẵn (DB)" and df is not None:
-        ten_rac = st.selectbox("Chọn mẫu rác:", df['Tên rác'].unique())
-        dong = df[df['Tên rác'] == ten_rac].iloc[0]
-        la_sinh_vat = bool(dong['Nguồn gốc sinh vật (1/0)'])
-        do_am = float(str(dong['Độ ẩm (0-100)']).replace(',','.'))
-    else:
-        ten_rac = st.text_input("Tên mẫu vật:", "Mẫu mới")
-        la_sinh_vat = st.toggle("Nguồn gốc sinh học")
-        do_am = st.slider("Độ ẩm (%)", 0, 100, 25)
+    dong = df[df['Tên rác'] == ten_rac].iloc[0]
+    la_sinh_vat = bool(dong['Nguồn gốc sinh vật (1/0)'])
+    do_am = float(str(dong['Độ ẩm (0-100)']).replace(',','.'))
     
-    la_nguy_hai = st.toggle("💉 Rác y tế / Nguy hại?")
-    nut_phan_tich = st.button("🔎 BẮT ĐẦU PHÂN TÍCH 🔍")
+    if st.button("🎯 PHÂN TÍCH NGAY", use_container_width=True):
+        if la_sinh_vat and do_am >= nguong_am: res = "huuco"
+        elif not la_sinh_vat and do_am < 40: res = "taiche"
+        else: res = "voco"
+        st.session_state.ket_qua_cu = res
+        st.session_state.show_anim = True
 
-# 6. LOGIC AI
-if nut_phan_tich:
-    if la_nguy_hai: ket_qua = "nguyhai"
-    elif la_sinh_vat and do_am >= nguong_am: ket_qua = "huuco"
-    elif not la_sinh_vat and do_am < 40: ket_qua = "taiche"
-    else: ket_qua = "voco"
-    
-    if ket_qua == "huuco": st.balloons()
-    st.session_state['ket_qua_cu'] = ket_qua
-
-hien_thi = st.session_state['ket_qua_cu']
-
-# 7. HIỂN THỊ KẾT QUẢ (4 THÙNG RÁC)
+# 7. HIỂN THỊ KẾT QUẢ & ANIMATION
 st.write("---")
+
+# Container bọc 4 cột để làm điểm tựa cho rác bay
+st.markdown('<div class="bin-container">', unsafe_allow_html=True)
+
+# Nếu đang có animation, hiện cái rác bay đè lên hàng thùng
+if st.session_state.show_anim:
+    st.markdown(f'<div class="toss-animation">📦 {ten_rac}</div>', unsafe_allow_html=True)
+    time.sleep(0.6) # Khớp với thời gian animation 0.6s
+    st.session_state.show_anim = False
+    st.rerun()
+
 t1, t2, t3, t4 = st.columns(4)
+hien_thi = st.session_state.ket_qua_cu
 
 anh_b64 = {
     "huuco": get_base64_img("huuco.png"),
     "taiche": get_base64_img("taiche.png"),
-    "nguyhai": get_base64_img("voco.png"), # File voco.png dùng làm icon nguy hại
+    "nguyhai": get_base64_img("voco.png"),
     "voco": get_base64_img("general.png")
 }
 
 thung_rac = [
-    (t1, "huuco", "RÁC HỮU CƠ", "active-huuco"),
-    (t2, "taiche", "RÁC TÁI CHẾ", "active-taiche"),
-    (t3, "nguyhai", "RÁC NGUY HẠI", "active-hazar"),
-    (t4, "voco", "VÔ CƠ KHÁC", "active-general")
+    (t1, "huuco", "HỮU CƠ", "active-huuco"),
+    (t2, "taiche", "TÁI CHẾ", "active-taiche"),
+    (t3, "nguyhai", "NGUY HẠI", "active-hazar"),
+    (t4, "voco", "VÔ CƠ", "active-general")
 ]
 
 for cot, ma, nhan, lop_css in thung_rac:
     with cot:
-        style = lop_css if hien_thi == ma else "inactive"
+        is_active = (hien_thi == ma)
+        lop_final = f"bin-box active-bin" if is_active else "bin-box inactive"
         b64 = anh_b64.get(ma, "")
         st.markdown(f"""
-            <div class="bin-box {style}">
+            <div class="{lop_final}">
                 <img src="data:image/png;base64,{b64}" class="bin-img">
-                <div class="bin-label">{nhan}</div>
+                <div style="color:white; font-weight:bold; margin-top:10px;">{nhan}</div>
             </div>
         """, unsafe_allow_html=True)
 
-# 8. PHẦN KIẾN THỨC BỔ SUNG (WOW FACTOR)
-# Đặt ngoài vòng lặp for để không bị lặp lại 4 lần
-st.write("---")
-with st.expander("🌍 Bạn có biết? (Kiến thức môi trường từ AI)"):
-    facts = [
-        "♻️ Một chai nhựa có thể mất đến 450 năm để phân hủy hoàn toàn.",
-        "🥗 Rác hữu cơ khi được ủ đúng cách sẽ tạo ra phân bón giàu dinh dưỡng cho cây trồng.",
-        "🔋 Pin và rác điện tử chứa kim loại nặng, tuyệt đối không vứt vào thùng rác thông thường!",
-        "🥤 Tại Việt Nam, mỗi hộ gia đình thải ra khoảng 1kg rác mỗi ngày.",
-        "🌊 Đến năm 2050, lượng nhựa trong đại dương có thể nhiều hơn lượng cá nếu chúng ta không hành động."
-    ]
-    st.info(random.choice(facts))
+st.markdown('</div>', unsafe_allow_html=True) # Đóng bin-container

@@ -7,16 +7,14 @@ import random
 # 1. CẤU HÌNH TRANG & GIAO DIỆN
 st.set_page_config(page_title="ECOSORT", page_icon="♻️", layout="wide")
 
-# CSS: Thêm hiệu ứng Pulse (Zoom Out rồi Scale Up lại)
 st.markdown("""
     <style>
     .main-title { text-align: center; font-size: 32px; font-weight: bold; margin-bottom: 25px; color: #4CAF50; }
     
-    /* Định nghĩa hiệu ứng nảy (Pulse) */
     @keyframes pulsePop {
         0% { transform: scale(1); }
-        30% { transform: scale(0.9); } /* Zoom Out một tí */
-        100% { transform: scale(1.1); } /* Scale Up to hơn ban đầu một chút để highlight */
+        30% { transform: scale(0.9); }
+        100% { transform: scale(1.1); }
     }
 
     .bin-box { 
@@ -26,36 +24,21 @@ st.markdown("""
         transition: all 0.3s ease;
     }
 
-    /* Khi Active: Áp dụng animation pulsePop */
-    .active-huuco { 
-        background-color: #1b4332 !important; border: 3px solid #4CAF50 !important; 
-        box-shadow: 0px 0px 20px #4CAF50; 
-        animation: pulsePop 0.4s ease-out forwards; 
-    }
-    .active-taiche { 
-        background-color: #4d4610 !important; border: 3px solid #fbc02d !important; 
-        box-shadow: 0px 0px 20px #fbc02d; 
-        animation: pulsePop 0.4s ease-out forwards; 
-    }
-    .active-hazar { 
-        background-color: #4d1010 !important; border: 3px solid #f44336 !important; 
-        box-shadow: 0px 0px 20px #f44336; 
-        animation: pulsePop 0.4s ease-out forwards; 
-    }
-    .active-general { 
-        background-color: #102a4d !important; border: 3px solid #2196F3 !important; 
-        box-shadow: 0px 0px 20px #2196F3; 
-        animation: pulsePop 0.4s ease-out forwards; 
-    }
+    .active-huuco { background-color: #1b4332 !important; border: 3px solid #4CAF50 !important; box-shadow: 0px 0px 20px #4CAF50; animation: pulsePop 0.4s ease-out forwards; }
+    .active-taiche { background-color: #4d4610 !important; border: 3px solid #fbc02d !important; box-shadow: 0px 0px 20px #fbc02d; animation: pulsePop 0.4s ease-out forwards; }
+    .active-hazar { background-color: #4d1010 !important; border: 3px solid #f44336 !important; box-shadow: 0px 0px 20px #f44336; animation: pulsePop 0.4s ease-out forwards; }
+    .active-general { background-color: #102a4d !important; border: 3px solid #2196F3 !important; box-shadow: 0px 0px 20px #2196F3; animation: pulsePop 0.4s ease-out forwards; }
     
     .inactive { opacity: 0.15; filter: grayscale(100%); }
     .bin-img { max-width: 120px; max-height: 120px; object-fit: contain; }
     .bin-label { font-weight: bold; color: white; font-size: 17px; margin-top: 15px; }
     
+    /* Khung hướng dẫn linh hoạt */
     .ins-card {
         background-color: #262730; padding: 15px; border-left: 5px solid #4CAF50;
-        border-radius: 5px; margin-bottom: 20px;
+        border-radius: 5px; margin-bottom: 20px; line-height: 1.6;
     }
+    .ins-title { color: #4CAF50; font-weight: bold; font-size: 18px; margin-bottom: 5px; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -72,7 +55,6 @@ def load_data():
 
 df = load_data()
 
-# KHỞI TẠO SESSION STATE
 if 'show_ins' not in st.session_state: st.session_state['show_ins'] = True
 if 'ket_qua_cu' not in st.session_state: st.session_state['ket_qua_cu'] = None
 if 'random_idx' not in st.session_state: st.session_state['random_idx'] = 0
@@ -87,17 +69,35 @@ with st.sidebar:
     nguong_am = st.slider("Ngưỡng ẩm rác hữu cơ (%)", 0, 100, 50)
     
     if not st.session_state['show_ins']:
-        if st.button("🔄 Hiện lại hướng dẫn"):
+        if st.button("Hiện lại hướng dẫn"):
             st.session_state['show_ins'] = True
             st.rerun()
 
 # 4. MÀN HÌNH CHÍNH
-st.markdown('<div class="main-title">♻️ PHÂN LOẠI CÁC LOẠI RÁC KHÁC NHAU ♻️</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">♻️ ECO-SORT VINSCHOOL ♻️</div>', unsafe_allow_html=True)
 
+# HIỂN THỊ HƯỚNG DẪN LUÂN PHIÊN
 if st.session_state['show_ins']:
     c1, c2 = st.columns([0.94, 0.06])
     with c1:
-        st.markdown('<div class="ins-card"><b>📖 HƯỚNG DẪN:</b> Chọn mẫu vật -> Bắt đầu phân tích.</div>', unsafe_allow_html=True)
+        if che_do == "Dữ liệu có sẵn (DB)":
+            st.markdown("""
+            <div class="ins-card">
+                <div class="ins-title">HƯỚNG DẪN: DỮ LIỆU CÓ SẴN </div>
+                • <b>Bước 1:</b> Sử dụng nút 🔀 (Shuffle) hoặc chọn tên rác từ danh sách.<br>
+                • <b>Bước 2:</b> Hệ thống tự động lấy thông số Độ ẩm & Nguồn gốc từ File CSV.<br>
+                • <b>Bước 3:</b> Nhấn 'Phân tích' để xem AI phân loại mẫu rác này vào thùng nào.
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div class="ins-card">
+                <div class="ins-title">HƯỚNG DẪN: TỰ NHẬP THÔNG SỐ</div>
+                • <b>Bước 1:</b> Tự đặt tên cho mẫu rác bạn muốn kiểm tra.<br>
+                • <b>Bước 2:</b> Bật hoặc tắt công tắc 'Nguồn gốc sinh học' và kéo thanh trượt để giả lập độ ẩm của rác.<br>
+                • <b>Bước 3:</b> Nhấn 'Phân tích' để thử nghiệm các loại rác phân loại khác nhau.
+            </div>
+            """, unsafe_allow_html=True)
     with c2:
         if st.button("❌", key="close_btn"):
             st.session_state['show_ins'] = False
@@ -121,7 +121,7 @@ with col_shuffle:
     st.write(" ")
     st.write(" ")
     if st.button("🔀"):
-        if df is not None:
+        if df is not None and che_do == "Dữ liệu có sẵn (DB)":
             st.session_state['random_idx'] = random.randint(0, len(df['Tên rác'].unique()) - 1)
             st.rerun()
 
@@ -137,7 +137,7 @@ if nut_phan_tich:
     
     if ket_qua == "huuco": st.balloons()
     st.session_state['ket_qua_cu'] = ket_qua
-    st.rerun() # Để kích hoạt animation ngay lập tức
+    st.rerun()
 
 hien_thi = st.session_state['ket_qua_cu']
 
@@ -173,5 +173,5 @@ for cot, ma, nhan, lop_css in thung_rac:
 # 8. WOW FACTOR
 st.write("---")
 with st.expander("🌍 Bạn có biết?"):
-    facts = ["Một chai nhựa mất 450 năm để phân hủy.", "Rác hữu cơ có thể làm phân bón sạch."]
+    facts = ["Một chai nhựa mất 450 năm để phân hủy.", "Rác hữu cơ làm phân bón rất tốt."]
     st.info(random.choice(facts))

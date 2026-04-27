@@ -9,17 +9,6 @@ import random
 # ==========================================
 st.set_page_config(page_title="ECOSORT", page_icon="♻️", layout="wide")
 
-def play_ting_sound():
-    # Link TRỰC TIẾP đến file mp3
-    sound_url = "https://www.myinstants.com/media/sounds/ding-sound-effect_2.mp3"
-    sound_html = f"""
-        <div style="display:none">
-            <iframe src="{sound_url}" allow="autoplay"></iframe>
-            <audio autoplay><source src="{sound_url}" type="audio/mp3"></audio>
-        </div>
-    """
-    st.components.v1.html(sound_html, height=0)
-
 def get_base64_img(file_path):
     if os.path.exists(file_path):
         with open(file_path, "rb") as f: return base64.b64encode(f.read()).decode()
